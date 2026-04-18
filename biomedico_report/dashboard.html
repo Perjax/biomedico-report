@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión Biomédica — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #0f1526;
+    --bg3: #161d35;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8892a4;
+    --text3: #4a5568;
+    --blue: #3b82f6;
+    --blue-dim: rgba(59,130,246,0.15);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --orange: #f97316;
+    --orange-dim: rgba(249,115,22,0.12);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; height: 60px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; color: #fff;
+  }
+  .logo-text { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .logo-sub { font-size: 11px; color: var(--text2); font-family: 'DM Mono', monospace; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .chip {
+    font-size: 11px; font-weight: 500; padding: 4px 10px;
+    border-radius: 20px; font-family: 'DM Mono', monospace;
+  }
+  .chip-blue { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(59,130,246,0.2); }
+  .chip-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+  .chip-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+  .chip-orange { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(249,115,22,0.2); }
+  .btn {
+    padding: 7px 16px; border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border2);
+    background: var(--bg3); color: var(--text);
+    transition: all .15s; white-space: nowrap;
+  }
+  .btn:hover { background: var(--border); }
+  .btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #2563eb; }
+  #fileInput { display: none; }
+
+  /* LAYOUT */
+  .shell { display: flex; height: calc(100vh - 60px); }
+  .sidebar {
+    width: 200px; flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 20px 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    cursor: pointer; transition: all .15s;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--blue-dim); color: var(--blue); }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+  .sidebar-label {
+    font-size: 10px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .08em;
+    padding: 16px 12px 6px;
+  }
+
+  /* MAIN */
+  .main { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+  /* UPLOAD */
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 48px 32px; text-align: center;
+    cursor: pointer; transition: all .2s;
+    background: var(--bg2);
+  }
+  .upload-zone:hover { border-color: var(--blue); background: var(--blue-dim); }
+  .upload-icon { font-size: 36px; margin-bottom: 12px; }
+  .upload-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .upload-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+  .upload-btns { display: flex; gap: 10px; justify-content: center; }
+
+  /* PANES */
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  /* KPI GRID */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 22px; }
+  .kpi {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px 16px;
+    transition: border .15s;
+  }
+  .kpi:hover { border-color: var(--border2); }
+  .kpi-val { font-size: 28px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; font-family: 'DM Mono', monospace; }
+  .kpi-lbl { font-size: 12px; color: var(--text2); margin-top: 6px; }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .kpi-red .kpi-val { color: var(--red); }
+  .kpi-orange .kpi-val { color: var(--orange); }
+  .kpi-green .kpi-val { color: var(--green); }
+  .kpi-blue .kpi-val { color: var(--blue); }
+
+  /* CHARTS GRID */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .chart-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px;
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .card-title {
+    font-size: 12px; font-weight: 600; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px;
+  }
+
+  /* TABLE */
+  .table-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 14px;
+  }
+  .table-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+  }
+  .filter-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .filter-row select {
+    font-family: 'DM Sans', sans-serif; font-size: 12px;
+    padding: 6px 10px; border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--bg3); color: var(--text);
+    cursor: pointer;
+  }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    font-size: 11px; font-weight: 600; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .05em;
+    text-align: left; padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; white-space: nowrap; user-select: none;
+  }
+  th:hover { color: var(--text); }
+  td { padding: 11px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .bat-bar { display: flex; align-items: center; gap: 8px; }
+  .bat-track {
+    width: 56px; height: 4px; border-radius: 2px;
+    background: var(--bg3); flex-shrink: 0;
+  }
+  .bat-fill { height: 4px; border-radius: 2px; }
+  .bat-pct { font-family: 'DM Mono', monospace; font-size: 12px; }
+
+  /* PILLS */
+  .pill {
+    display: inline-block; padding: 3px 9px;
+    border-radius: 20px; font-size: 11px; font-weight: 500;
+    font-family: 'DM Mono', monospace;
+  }
+  .pill-red { background: var(--red-dim); color: var(--red); }
+  .pill-orange { background: var(--orange-dim); color: var(--orange); }
+  .pill-green { background: var(--green-dim); color: var(--green); }
+  .pill-gray { background: rgba(255,255,255,0.05); color: var(--text2); }
+
+  /* ALERTS */
+  .alert-item {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+  }
+  .alert-item:last-child { border-bottom: none; }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .alert-dot-red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .alert-dot-orange { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+  .alert-name { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+  .alert-detail { font-size: 12px; color: var(--text2); }
+
+  /* AI */
+  .ai-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px; margin-bottom: 14px;
+  }
+  .ai-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .ai-orb {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg,#3b82f6,#8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .ai-title { font-size: 14px; font-weight: 600; }
+  .ai-sub { font-size: 12px; color: var(--text2); margin-bottom: 14px; }
+  .ai-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .ai-chip {
+    font-size: 12px; padding: 5px 12px; border-radius: 20px;
+    border: 1px solid var(--border2); background: var(--bg3);
+    color: var(--text2); cursor: pointer; transition: all .15s;
+  }
+  .ai-chip:hover { border-color: var(--blue); color: var(--blue); }
+  .ai-input-row { display: flex; gap: 8px; }
+  .ai-input {
+    flex: 1; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 10px 14px; border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--bg3); color: var(--text);
+    outline: none; transition: border .15s;
+  }
+  .ai-input:focus { border-color: var(--blue); }
+  .ai-response {
+    font-size: 13px; color: var(--text); line-height: 1.7;
+    margin-top: 14px; padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .ai-thinking { color: var(--text3); font-style: italic; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* SECTION TITLE */
+  .section-hd {
+    font-size: 18px; font-weight: 600; letter-spacing: -0.02em;
+    margin-bottom: 18px;
+  }
+  .count-badge {
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    color: var(--text2); margin-left: 8px; font-weight: 400;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">BM</div>
+    <div>
+      <div class="logo-text">Gestión Biomédica</div>
+      <div class="logo-sub">Sistema de monitoreo</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="chip chip-green" id="statusChip">● Sistema activo</span>
+    <button class="btn" onclick="document.getElementById('fileInput').click()">Cargar CSV / Excel</button>
+    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+    <button class="btn btn-primary" onclick="switchNav('alertas')">Ver alertas críticas</button>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-label">Navegación</div>
+    <div class="nav-item active" onclick="switchNav('resumen')" id="nav-resumen">
+      <span class="nav-icon">◈</span> Resumen
+    </div>
+    <div class="nav-item" onclick="switchNav('inventario')" id="nav-inventario">
+      <span class="nav-icon">≡</span> Inventario
+    </div>
+    <div class="nav-item" onclick="switchNav('alertas')" id="nav-alertas">
+      <span class="nav-icon">◉</span> Alertas
+      <span id="alertCount" style="margin-left:auto;font-size:10px;background:var(--red-dim);color:var(--red);padding:1px 6px;border-radius:10px;font-family:'DM Mono',monospace"></span>
+    </div>
+    <div class="nav-item" onclick="switchNav('analisis')" id="nav-analisis">
+      <span class="nav-icon">✦</span> Análisis IA
+    </div>
+    <div style="flex:1"></div>
+    <div style="padding:12px;border-top:1px solid var(--border)">
+      <button class="btn" style="width:100%;font-size:12px" onclick="loadDemo()">Cargar demo</button>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- UPLOAD -->
+    <div id="uploadZone" class="upload-zone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📂</div>
+      <div class="upload-title">Carga tu inventario de equipos</div>
+      <div class="upload-sub">Arrastra un archivo CSV o Excel, o usa los datos de demostración</div>
+      <div class="upload-btns">
+        <button class="btn btn-primary" onclick="event.stopPropagation();loadDemo()">Cargar datos demo</button>
+        <button class="btn" onclick="event.stopPropagation();alert('Columnas requeridas:\nEquipo, Ubicación, Batería (%), Última Calibración\n\nEjemplo CSV:\nEquipo,Ubicación,Batería (%),Última Calibración\nMonitor UMEC12,UCI,85,2025-01-15')">Ver formato</button>
+      </div>
+    </div>
+
+    <!-- RESUMEN -->
+    <div id="pane-resumen" class="pane">
+      <div class="section-hd">Resumen del inventario</div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="card-title">Estado de batería</div>
+          <div style="position:relative;height:180px"><canvas id="chartBat" role="img" aria-label="Estado de batería"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">Estado de calibración</div>
+          <div style="position:relative;height:180px"><canvas id="chartCal" role="img" aria-label="Estado de calibración"></canvas></div>
+        </div>
+        <div class="chart-card full">
+          <div class="card-title">Nivel de batería por equipo</div>
+          <div style="position:relative" id="barWrap"><canvas id="chartBar" role="img" aria-label="Batería por equipo"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTARIO -->
+    <div id="pane-inventario" class="pane">
+      <div class="section-hd">Inventario completo <span class="count-badge" id="invCount"></span></div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="filter-row">
+            <select id="fBat" onchange="renderTable()">
+              <option value="">Batería: todos</option>
+              <option value="CRÍTICO">Crítico</option>
+              <option value="BAJO">Bajo</option>
+              <option value="NORMAL">Normal</option>
+            </select>
+            <select id="fCal" onchange="renderTable()">
+              <option value="">Calibración: todas</option>
+              <option value="VENCIDA">Vencida</option>
+              <option value="PRÓXIMA">Próxima</option>
+              <option value="VIGENTE">Vigente</option>
+            </select>
+            <select id="fUbi" onchange="renderTable()">
+              <option value="">Ubicación: todas</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th onclick="sortBy('Equipo')">Equipo</th>
+              <th onclick="sortBy('Ubicación')">Ubicación</th>
+              <th onclick="sortBy('Batería')">Batería</th>
+              <th>Estado bat.</th>
+              <th onclick="sortBy('DiasCal')">Días sin calibrar</th>
+              <th>Estado cal.</th>
+              <th>Alerta</th>
+            </tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALERTAS -->
+    <div id="pane-alertas" class="pane">
+      <div class="section-hd">Alertas críticas</div>
+      <div class="table-card" id="alertList"></div>
+    </div>
+
+    <!-- ANÁLISIS IA -->
+    <div id="pane-analisis" class="pane">
+      <div class="section-hd">Análisis inteligente</div>
+      <div class="ai-card">
+        <div class="ai-header">
+          <div class="ai-orb">✦</div>
+          <div class="ai-title">Asistente biomédico con IA</div>
+          <span class="chip chip-blue" style="margin-left:auto">Claude</span>
+        </div>
+        <div class="ai-sub">Haz preguntas sobre tu inventario en lenguaje natural</div>
+        <div class="ai-chips">
+          <div class="ai-chip" onclick="askAI('¿Cuáles equipos son más críticos y qué acción recomiendas primero?')">¿Qué equipos son críticos?</div>
+          <div class="ai-chip" onclick="askAI('Dame un diagnóstico ejecutivo del estado general del inventario')">Diagnóstico ejecutivo</div>
+          <div class="ai-chip" onclick="askAI('¿Qué equipos deben calibrarse urgentemente esta semana?')">Calibraciones urgentes</div>
+          <div class="ai-chip" onclick="askAI('Predice cuántos equipos tendrán batería crítica si no se actúa en 30 días')">Predicción 30 días</div>
+          <div class="ai-chip" onclick="askAI('¿Cuál área del hospital tiene más equipos en riesgo?')">Riesgo por área</div>
+        </div>
+        <div class="ai-input-row">
+          <input class="ai-input" id="aiInput" type="text" placeholder="Escribe tu pregunta sobre los equipos..." onkeydown="if(event.key==='Enter')sendAI()">
+          <button class="btn btn-primary" onclick="sendAI()">Analizar →</button>
+        </div>
+        <div class="ai-response" id="aiResponse" style="display:none"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="card-title">Proyección de equipos críticos — próximas 6 semanas</div>
+        <div style="position:relative;height:200px"><canvas id="chartTrend" role="img" aria-label="Proyección críticos"></canvas></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+let equipos=[];let sortCol='';let sortDir=1;
+let cBat=null,cCal=null,cBar=null,cTrend=null;
+
+const DEMO=[
+  {Equipo:"Monitor UMEC12",Ubicación:"UCI",Batería:18,EstBat:"CRÍTICO",UltCal:"2024-10-05",DiasCal:195,EstCal:"VENCIDA",Critico:true},
+  {Equipo:"Ventilador PB840",Ubicación:"Cirugía",Batería:44,EstBat:"BAJO",UltCal:"2025-01-20",DiasCal:88,EstCal:"PRÓXIMA",Critico:false},
+  {Equipo:"Bomba Infusión IV",Ubicación:"Pediatría",Batería:92,EstBat:"NORMAL",UltCal:"2025-03-01",DiasCal:48,EstCal:"VIGENTE",Critico:false},
+  {Equipo:"ECG-12",Ubicación:"Cardiología",Batería:26,EstBat:"CRÍTICO",UltCal:"2024-09-12",DiasCal:218,EstCal:"VENCIDA",Critico:true},
+  {Equipo:"Desfibrilador LIFEPAK",Ubicación:"Urgencias",Batería:75,EstBat:"NORMAL",UltCal:"2024-08-30",DiasCal:231,EstCal:"VENCIDA",Critico:true},
+  {Equipo:"Oxímetro Nellcor",Ubicación:"UCI",Batería:58,EstBat:"BAJO",UltCal:"2024-11-14",DiasCal:155,EstCal:"VENCIDA",Critico:true},
+  {Equipo:"Monitor Presión Art.",Ubicación:"Urgencias",Batería:83,EstBat:"NORMAL",UltCal:"2025-02-18",DiasCal:59,EstCal:"VIGENTE",Critico:false},
+  {Equipo:"Ecógrafo SonoSite",Ubicación:"Cirugía",Batería:12,EstBat:"CRÍTICO",UltCal:"2025-01-05",DiasCal:103,EstCal:"VENCIDA",Critico:true},
+];
+
+function loadDemo(){equipos=DEMO;init();}
+
+document.getElementById('fileInput').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const ext=f.name.split('.').pop().toLowerCase();
+  if(ext==='csv'){
+    const r=new FileReader();
+    r.onload=ev=>{processData(Papa.parse(ev.target.result,{header:true,skipEmptyLines:true}).data);};
+    r.readAsText(f);
+  } else {
+    const r=new FileReader();
+    r.onload=ev=>{
+      const wb=XLSX.read(ev.target.result,{type:'binary'});
+      processData(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]));
+    };r.readAsBinaryString(f);
+  }
+});
+
+function processData(rows){
+  equipos=rows.map(r=>{
+    const bat=parseInt(r['Batería (%)'||'Batería'])||parseInt(r.Bateria)||50;
+    const ultCal=r['Última Calibración']||r['Ultima Calibracion']||'2025-01-01';
+    const dias=Math.floor((Date.now()-new Date(ultCal))/(86400000));
+    const estBat=bat<=30?'CRÍTICO':bat<=60?'BAJO':'NORMAL';
+    const estCal=dias>=90?'VENCIDA':dias>=60?'PRÓXIMA':'VIGENTE';
+    return{Equipo:r.Equipo||'Equipo',Ubicación:r.Ubicación||r.Ubicacion||'N/A',
+      Batería:bat,EstBat:estBat,UltCal:ultCal,DiasCal:dias,EstCal:estCal,Critico:bat<=30||dias>=90};
+  });
+  init();
+}
+
+function init(){
+  document.getElementById('uploadZone').style.display='none';
+  const criticos=equipos.filter(e=>e.Critico).length;
+  document.getElementById('alertCount').textContent=criticos||'';
+  populateFilters();renderKPIs();renderTable();renderAlerts();renderCharts();renderTrend();
+  switchNav('resumen');
+}
+
+function renderKPIs(){
+  const t=equipos.length,cr=equipos.filter(e=>e.Critico).length;
+  const bb=equipos.filter(e=>e.EstBat!=='NORMAL').length;
+  const cv=equipos.filter(e=>e.EstCal==='VENCIDA').length;
+  const pb=Math.round(equipos.reduce((s,e)=>s+e.Batería,0)/t);
+  const kpis=[
+    {val:t,lbl:'Total equipos',sub:'en inventario',cls:'kpi-blue'},
+    {val:cr,lbl:'Alertas críticas',sub:'requieren acción',cls:cr>0?'kpi-red':''},
+    {val:bb,lbl:'Batería baja',sub:'≤60% de carga',cls:bb>0?'kpi-orange':''},
+    {val:cv,lbl:'Cal. vencida',sub:'>90 días',cls:cv>0?'kpi-red':''},
+    {val:pb+'%',lbl:'Batería promedio',sub:'del inventario',cls:pb<50?'kpi-orange':'kpi-green'},
+  ];
+  document.getElementById('kpiGrid').innerHTML=kpis.map(k=>`
+    <div class="kpi ${k.cls}">
+      <div class="kpi-val">${k.val}</div>
+      <div class="kpi-lbl">${k.lbl}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+}
+
+function pill(estado,tipo){
+  const map=tipo==='bat'
+    ?{CRÍTICO:'pill-red',BAJO:'pill-orange',NORMAL:'pill-green'}
+    :{VENCIDA:'pill-red',PRÓXIMA:'pill-orange',VIGENTE:'pill-green'};
+  return`<span class="pill ${map[estado]||'pill-gray'}">${estado}</span>`;
+}
+
+function renderTable(){
+  let d=[...equipos];
+  const fb=document.getElementById('fBat').value;
+  const fc=document.getElementById('fCal').value;
+  const fu=document.getElementById('fUbi').value;
+  if(fb)d=d.filter(e=>e.EstBat===fb);
+  if(fc)d=d.filter(e=>e.EstCal===fc);
+  if(fu)d=d.filter(e=>e.Ubicación===fu);
+  if(sortCol)d.sort((a,b)=>{const av=a[sortCol]??'',bv=b[sortCol]??'';return(typeof av==='number'?(av-bv):String(av).localeCompare(String(bv)))*sortDir;});
+  document.getElementById('invCount').textContent=d.length+' equipos';
+  document.getElementById('tableBody').innerHTML=d.map(e=>`<tr>
+    <td style="font-weight:500">${e.Equipo}</td>
+    <td><span class="pill pill-gray">${e.Ubicación}</span></td>
+    <td><div class="bat-bar"><div class="bat-track"><div class="bat-fill" style="width:${e.Batería}%;background:${e.EstBat==='CRÍTICO'?'#ef4444':e.EstBat==='BAJO'?'#f97316':'#22c55e'}"></div></div><span class="bat-pct">${e.Batería}%</span></div></td>
+    <td>${pill(e.EstBat,'bat')}</td>
+    <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text2)">${e.DiasCal}d</td>
+    <td>${pill(e.EstCal,'cal')}</td>
+    <td>${e.Critico?'<span class="pill pill-red">⚠ Crítico</span>':'<span class="pill pill-green">✓ OK</span>'}</td>
+  </tr>`).join('');
+}
+
+function sortBy(c){sortCol===c?sortDir*=-1:(sortCol=c,sortDir=1);renderTable();}
+
+function populateFilters(){
+  const ubis=[...new Set(equipos.map(e=>e.Ubicación))];
+  document.getElementById('fUbi').innerHTML='<option value="">Ubicación: todas</option>'+ubis.map(u=>`<option>${u}</option>`).join('');
+}
+
+function renderAlerts(){
+  const criticos=equipos.filter(e=>e.Critico);
+  const proximos=equipos.filter(e=>!e.Critico&&(e.EstCal==='PRÓXIMA'||e.EstBat==='BAJO'));
+  if(!criticos.length&&!proximos.length){
+    document.getElementById('alertList').innerHTML='<div class="alert-item"><div class="alert-dot" style="background:var(--green)"></div><div><div class="alert-name">Todo en orden</div><div class="alert-detail">Todos los equipos están operativos</div></div></div>';
+    return;
+  }
+  let html='';
+  criticos.forEach(e=>{
+    const r=[];
+    if(e.EstBat==='CRÍTICO')r.push(`Batería crítica: ${e.Batería}%`);
+    if(e.EstCal==='VENCIDA')r.push(`Calibración vencida: ${e.DiasCal} días`);
+    html+=`<div class="alert-item"><div class="alert-dot alert-dot-red"></div><div><div class="alert-name">${e.Equipo} <span class="chip chip-red" style="font-size:10px;padding:2px 7px">CRÍTICO</span></div><div class="alert-detail">${e.Ubicación} · ${r.join(' · ')}</div></div></div>`;
+  });
+  proximos.forEach(e=>{
+    const r=[];
+    if(e.EstBat==='BAJO')r.push(`Batería baja: ${e.Batería}%`);
+    if(e.EstCal==='PRÓXIMA')r.push(`Calibración próxima: ${e.DiasCal} días`);
+    html+=`<div class="alert-item"><div class="alert-dot alert-dot-orange"></div><div><div class="alert-name">${e.Equipo} <span class="chip chip-orange" style="font-size:10px;padding:2px 7px">ATENCIÓN</span></div><div class="alert-detail">${e.Ubicación} · ${r.join(' · ')}</div></div></div>`;
+  });
+  document.getElementById('alertList').innerHTML=html;
+}
+
+function renderCharts(){
+  const cnt=(arr,v)=>arr.filter(e=>e===v).length;
+  const bats=equipos.map(e=>e.EstBat),cals=equipos.map(e=>e.EstCal);
+  const dCfg={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+  const cols=['#22c55e','#f97316','#ef4444'];
+
+  if(cBat)cBat.destroy();
+  cBat=new Chart(document.getElementById('chartBat'),{type:'doughnut',
+    data:{labels:['Normal','Bajo','Crítico'],datasets:[{data:[cnt(bats,'NORMAL'),cnt(bats,'BAJO'),cnt(bats,'CRÍTICO')],backgroundColor:cols,borderWidth:3,borderColor:'#0f1526'}]},
+    options:{...dCfg}});
+
+  if(cCal)cCal.destroy();
+  cCal=new Chart(document.getElementById('chartCal'),{type:'doughnut',
+    data:{labels:['Vigente','Próxima','Vencida'],datasets:[{data:[cnt(cals,'VIGENTE'),cnt(cals,'PRÓXIMA'),cnt(cals,'VENCIDA')],backgroundColor:cols,borderWidth:3,borderColor:'#0f1526'}]},
+    options:{...dCfg}});
+
+  const h=Math.max(equipos.length*46+60,200);
+  document.getElementById('barWrap').style.height=h+'px';
+  if(cBar)cBar.destroy();
+  cBar=new Chart(document.getElementById('chartBar'),{type:'bar',
+    data:{labels:equipos.map(e=>e.Equipo.length>24?e.Equipo.slice(0,24)+'…':e.Equipo),
+      datasets:[{data:equipos.map(e=>e.Batería),
+        backgroundColor:equipos.map(e=>e.EstBat==='CRÍTICO'?'#ef4444':e.EstBat==='BAJO'?'#f97316':'#22c55e'),
+        borderRadius:4,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      scales:{x:{min:0,max:105,ticks:{color:'#8892a4',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:'#8892a4',font:{size:11}},grid:{display:false}}},
+      plugins:{legend:{display:false}}}});
+}
+
+function renderTrend(){
+  const base=equipos.filter(e=>e.Critico).length;
+  const labels=['Hoy','Sem 1','Sem 2','Sem 3','Sem 4','Sem 5','Sem 6'];
+  const vals=[base,base+1,base+1,base+2,base+3,base+3,base+4];
+  if(cTrend)cTrend.destroy();
+  cTrend=new Chart(document.getElementById('chartTrend'),{type:'line',
+    data:{labels,datasets:[{label:'Críticos proyectados',data:vals,
+      borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.08)',
+      fill:true,tension:0.4,pointRadius:5,pointBackgroundColor:'#ef4444'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{min:0,ticks:{stepSize:1,color:'#8892a4'},grid:{color:'rgba(255,255,255,0.04)'}},
+        x:{ticks:{color:'#8892a4'},grid:{display:false}}},
+      plugins:{legend:{display:false}}}});
+}
+
+function switchNav(id){
+  ['resumen','inventario','alertas','analisis'].forEach(n=>{
+    document.getElementById('nav-'+n).classList.toggle('active',n===id);
+    const p=document.getElementById('pane-'+n);
+    if(p)p.classList.toggle('active',n===id);
+  });
+}
+
+async function askAI(q){
+  if(!q)q=document.getElementById('aiInput').value.trim();
+  if(!q)return;
+  document.getElementById('aiInput').value='';
+  const box=document.getElementById('aiResponse');
+  box.style.display='block';
+  box.innerHTML='<span class="ai-thinking">Analizando inventario...</span>';
+  const ctx=`Inventario: ${equipos.length} equipos. Críticos: ${equipos.filter(e=>e.Critico).length}. Bat promedio: ${Math.round(equipos.reduce((s,e)=>s+e.Batería,0)/equipos.length)}%. Cal vencidas: ${equipos.filter(e=>e.EstCal==='VENCIDA').length}. Detalle: ${equipos.map(e=>`${e.Equipo}(${e.Ubicación}): bat ${e.Batería}%[${e.EstBat}], cal ${e.DiasCal}d[${e.EstCal}]`).join('; ')}`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
+        system:'Eres experto en gestión de equipos biomédicos. Responde en español, conciso y accionable. Usa viñetas.',
+        messages:[{role:'user',content:`Contexto: ${ctx}\nPregunta: ${q}`}]})});
+    const d=await r.json();
+    box.innerHTML=(d.content?.map(c=>c.text||'').join('')||'Sin respuesta.')
+      .replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  }catch(e){
+    box.innerHTML='<span style="color:var(--red)">Error al conectar con la IA.</span>';
+  }
+}
+
+function sendAI(){askAI('');}
+</script>
+</body>
+</html>
