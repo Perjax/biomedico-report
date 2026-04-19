@@ -1,7 +1,7 @@
 """
-app.py — Servidor Web del Sistema de Gestión Biomédica
+app.py — Servidor Web del Sistema de Gestion Biomedica
 =======================================================
-Versión con base de datos SQLite persistente + login.
+Version con base de datos SQLite persistente + login.
 
 Los equipos se guardan en data/biomedico.db y persisten
 aunque cierres el servidor.
@@ -38,16 +38,16 @@ from modules.database import (
 
 
 # ---------------------------------------------------------------------------
-# Inicialización
+# Inicializacion
 # ---------------------------------------------------------------------------
 app = Flask(__name__, static_folder=".", static_url_path="", template_folder="templates")
 app.secret_key = "biomedico-secret-key-2025-cambiar-en-produccion"
 
-# Crear tablas y cargar demo si la BD está vacía
+# Crear tablas y cargar demo si la BD esta vacia
 with app.app_context():
     inicializar_db()
     if not hay_datos():
-        print("  Base de datos vacía — cargando datos demo...")
+        print("  Base de datos vacia — cargando datos demo...")
         guardar_equipos(generar_datos(seed=42))
         print("  ✓ Datos demo cargados en la BD")
 
@@ -71,7 +71,7 @@ def permiso_requerido(permiso):
             if "usuario" not in session:
                 return redirect(url_for("login"))
             if not tiene_permiso(session, permiso):
-                return jsonify({"error": "No tienes permiso para esta acción"}), 403
+                return jsonify({"error": "No tienes permiso para esta accion"}), 403
             return f(*args, **kwargs)
         return decorado
     return decorador
@@ -82,8 +82,8 @@ def permiso_requerido(permiso):
 # ---------------------------------------------------------------------------
 def _df_a_dict(df: pd.DataFrame) -> list:
     df_json = df.copy()
-    df_json["Alerta Crítica"] = df_json["Alerta Crítica"].apply(
-        lambda x: "CRÍTICO" if x else "OK"
+    df_json["Alerta Critica"] = df_json["Alerta Critica"].apply(
+        lambda x: "CRITICO" if x else "OK"
     )
     return df_json.to_dict(orient="records")
 
@@ -97,9 +97,9 @@ def _procesar_dataframe(df_raw: pd.DataFrame) -> pd.DataFrame:
     registros = []
     for _, row in df_raw.iterrows():
         equipo    = str(row.get("Equipo") or row.get("equipo") or "Sin nombre")
-        ubicacion = str(row.get("Ubicación") or row.get("Ubicacion") or "N/A")
-        bateria   = int(row.get("Batería (%)") or row.get("Bateria") or 50)
-        ult_cal   = str(row.get("Última Calibración") or row.get("Ultima Calibracion") or "2025-01-01")
+        ubicacion = str(row.get("Ubicacion") or row.get("Ubicacion") or "N/A")
+        bateria   = int(row.get("Bateria (%)") or row.get("Bateria") or 50)
+        ult_cal   = str(row.get("Ultima Calibracion") or row.get("Ultima Calibracion") or "2025-01-01")
 
         try:
             fecha = pd.to_datetime(ult_cal)
@@ -108,21 +108,21 @@ def _procesar_dataframe(df_raw: pd.DataFrame) -> pd.DataFrame:
             dias = 90
 
         registros.append({
-            "Equipo": equipo, "Ubicación": ubicacion,
-            "Batería (%)": bateria,
-            "Estado Batería": calcular_estado_bateria(bateria),
-            "Última Calibración": ult_cal[:10],
-            "Días desde Calibración": dias,
-            "Estado Calibración": calcular_estado_calibracion(dias),
-            "Alerta Crítica": es_critico(bateria, dias),
+            "Equipo": equipo, "Ubicacion": ubicacion,
+            "Bateria (%)": bateria,
+            "Estado Bateria": calcular_estado_bateria(bateria),
+            "Ultima Calibracion": ult_cal[:10],
+            "Dias desde Calibracion": dias,
+            "Estado Calibracion": calcular_estado_calibracion(dias),
+            "Alerta Critica": es_critico(bateria, dias),
         })
 
     df = pd.DataFrame(registros)
-    return df.sort_values("Alerta Crítica", ascending=False).reset_index(drop=True)
+    return df.sort_values("Alerta Critica", ascending=False).reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
-# Autenticación
+# Autenticacion
 # ---------------------------------------------------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -137,7 +137,7 @@ def login():
         if resultado:
             session.update(resultado)
             return redirect(url_for("index"))
-        error = "Usuario o contraseña incorrectos"
+        error = "Usuario o contrasena incorrectos"
     return render_template("login.html", error=error)
 
 
@@ -167,7 +167,7 @@ def index():
         border-bottom:1px solid rgba(255,255,255,0.07);
         font-family:'DM Sans',sans-serif;color:#8892a4;">
       <span>
-        Sesión activa:
+        Sesion activa:
         <strong style="color:#e8eaf0">{session['nombre']}</strong>
         <span style="margin-left:8px;padding:2px 8px;border-radius:20px;font-size:10px;
             background:{color_rol};color:{texto_rol};font-family:monospace;">
@@ -178,7 +178,7 @@ def index():
           border-radius:8px;border:1px solid rgba(255,255,255,0.1);"
          onmouseover="this.style.background='rgba(255,255,255,0.05)'"
          onmouseout="this.style.background='transparent'">
-        Cerrar sesión
+        Cerrar sesion
       </a>
     </div>"""
 
@@ -197,7 +197,7 @@ def api_datos():
         return jsonify({"total": 0, "criticos": 0, "equipos": []})
     return jsonify({
         "total": len(df),
-        "criticos": int(df["Alerta Crítica"].sum()),
+        "criticos": int(df["Alerta Critica"].sum()),
         "usuario": session.get("nombre"),
         "rol": session.get("rol"),
         "equipos": _df_a_dict(df),
@@ -212,15 +212,15 @@ def api_resumen():
         return jsonify({"total_equipos": 0})
     return jsonify({
         "total_equipos": len(df),
-        "alertas_criticas": int(df["Alerta Crítica"].sum()),
-        "bateria_critica": int((df["Estado Batería"] == "CRÍTICO").sum()),
-        "bateria_baja": int((df["Estado Batería"] == "BAJO").sum()),
-        "bateria_normal": int((df["Estado Batería"] == "NORMAL").sum()),
-        "calibracion_vencida": int((df["Estado Calibración"] == "VENCIDA").sum()),
-        "calibracion_proxima": int((df["Estado Calibración"] == "PRÓXIMA").sum()),
-        "calibracion_vigente": int((df["Estado Calibración"] == "VIGENTE").sum()),
-        "bateria_promedio": round(df["Batería (%)"].mean(), 1),
-        "dias_promedio_calibracion": round(df["Días desde Calibración"].mean(), 1),
+        "alertas_criticas": int(df["Alerta Critica"].sum()),
+        "bateria_critica": int((df["Estado Bateria"] == "CRITICO").sum()),
+        "bateria_baja": int((df["Estado Bateria"] == "BAJO").sum()),
+        "bateria_normal": int((df["Estado Bateria"] == "NORMAL").sum()),
+        "calibracion_vencida": int((df["Estado Calibracion"] == "VENCIDA").sum()),
+        "calibracion_proxima": int((df["Estado Calibracion"] == "PROXIMA").sum()),
+        "calibracion_vigente": int((df["Estado Calibracion"] == "VIGENTE").sum()),
+        "bateria_promedio": round(df["Bateria (%)"].mean(), 1),
+        "dias_promedio_calibracion": round(df["Dias desde Calibracion"].mean(), 1),
     })
 
 
@@ -279,7 +279,7 @@ def api_historial():
 @permiso_requerido("subir")
 def api_subir():
     if "archivo" not in request.files:
-        return jsonify({"error": "No se envió ningún archivo"}), 400
+        return jsonify({"error": "No se envio ningun archivo"}), 400
 
     archivo = request.files["archivo"]
     nombre  = archivo.filename.lower()
@@ -302,7 +302,7 @@ def api_subir():
         return jsonify({
             "mensaje": f"✓ {len(df)} equipos guardados en la base de datos",
             "total": len(df),
-            "criticos": int(df["Alerta Crítica"].sum()),
+            "criticos": int(df["Alerta Critica"].sum()),
             "equipos": _df_a_dict(df),
         })
 
@@ -361,7 +361,7 @@ def api_demo():
     return jsonify({
         "mensaje": f"✓ Datos demo guardados: {len(df)} equipos",
         "total": len(df),
-        "criticos": int(df["Alerta Crítica"].sum()),
+        "criticos": int(df["Alerta Critica"].sum()),
         "equipos": _df_a_dict(df),
     })
 
@@ -388,7 +388,7 @@ def api_estado():
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     print("=" * 52)
-    print("  SISTEMA DE GESTIÓN BIOMÉDICA v3.0")
+    print("  SISTEMA DE GESTION BIOMEDICA v3.0")
     print("  Con base de datos SQLite persistente")
     print("=" * 52)
     print("\n  Abre esto en tu navegador:")
@@ -401,3 +401,120 @@ if __name__ == "__main__":
     print("=" * 52 + "\n")
 
     app.run(debug=True, port=5000)
+
+
+# ---------------------------------------------------------------------------
+# Modulo de Mantenimiento — rutas
+# ---------------------------------------------------------------------------
+from modules.mantenimiento import (
+    inicializar_tablas_mantenimiento, crear_orden, obtener_ordenes,
+    completar_orden, actualizar_orden, eliminar_orden,
+    obtener_proximos, obtener_vencidos,
+    obtener_historial_mantenimiento, registrar_snapshot,
+    obtener_tendencias, resumen_mantenimiento,
+)
+
+# Inicializar tablas de mantenimiento al arrancar
+with app.app_context():
+    inicializar_tablas_mantenimiento()
+
+
+@app.route("/mantenimiento")
+@login_requerido
+def mantenimiento():
+    """Sirve la pagina del modulo de mantenimiento."""
+    return render_template("mantenimiento.html")
+
+
+@app.route("/api/mantenimiento/resumen")
+@login_requerido
+def api_mant_resumen():
+    return jsonify(resumen_mantenimiento())
+
+
+@app.route("/api/mantenimiento/ordenes", methods=["GET"])
+@login_requerido
+def api_mant_ordenes():
+    estado = request.args.get("estado")
+    ordenes = obtener_ordenes(estado=estado)
+    return jsonify({"ordenes": ordenes, "total": len(ordenes)})
+
+
+@app.route("/api/mantenimiento/ordenes", methods=["POST"])
+@permiso_requerido("subir")
+def api_mant_crear():
+    datos = request.get_json()
+    if not datos or not datos.get("equipo"):
+        return jsonify({"error": "El campo equipo es requerido"}), 400
+    nuevo_id = crear_orden(datos)
+    return jsonify({"mensaje": "Orden creada", "id": nuevo_id}), 201
+
+
+@app.route("/api/mantenimiento/ordenes/<int:orden_id>", methods=["PUT"])
+@permiso_requerido("subir")
+def api_mant_actualizar(orden_id):
+    datos = request.get_json()
+    ok = actualizar_orden(orden_id, datos)
+    if not ok:
+        return jsonify({"error": "Orden no encontrada"}), 404
+    return jsonify({"mensaje": "Orden actualizada"})
+
+
+@app.route("/api/mantenimiento/ordenes/<int:orden_id>", methods=["DELETE"])
+@permiso_requerido("subir")
+def api_mant_eliminar(orden_id):
+    ok = eliminar_orden(orden_id)
+    if not ok:
+        return jsonify({"error": "Orden no encontrada"}), 404
+    return jsonify({"mensaje": "Orden eliminada"})
+
+
+@app.route("/api/mantenimiento/ordenes/<int:orden_id>/completar", methods=["POST"])
+@permiso_requerido("exportar")
+def api_mant_completar(orden_id):
+    datos = request.get_json() or {}
+    ok = completar_orden(orden_id, datos)
+    if not ok:
+        return jsonify({"error": "Orden no encontrada"}), 404
+    return jsonify({"mensaje": "Orden completada y registrada en historial"})
+
+
+@app.route("/api/mantenimiento/proximos")
+@login_requerido
+def api_mant_proximos():
+    dias = int(request.args.get("dias", 30))
+    proximos = obtener_proximos(dias)
+    return jsonify({"proximos": proximos, "total": len(proximos)})
+
+
+@app.route("/api/mantenimiento/vencidos")
+@login_requerido
+def api_mant_vencidos():
+    vencidos = obtener_vencidos()
+    return jsonify({"vencidos": vencidos, "total": len(vencidos)})
+
+
+@app.route("/api/mantenimiento/historial")
+@login_requerido
+def api_mant_historial():
+    historial = obtener_historial_mantenimiento()
+    return jsonify({"historial": historial, "total": len(historial)})
+
+
+@app.route("/api/mantenimiento/tendencias")
+@login_requerido
+def api_mant_tendencias():
+    dias = int(request.args.get("dias", 60))
+    snapshots = obtener_tendencias(dias)
+    return jsonify({"snapshots": snapshots, "total": len(snapshots)})
+
+
+@app.route("/api/mantenimiento/snapshot", methods=["POST"])
+@permiso_requerido("subir")
+def api_mant_snapshot():
+    """Genera manualmente un snapshot del inventario actual."""
+    df = obtener_equipos()
+    if not df.empty:
+        registrar_snapshot(df)
+        return jsonify({"mensaje": "Snapshot registrado"})
+    return jsonify({"error": "No hay equipos cargados"}), 400

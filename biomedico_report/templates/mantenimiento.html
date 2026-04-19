@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mantenimiento y Tendencias — Gestión Biomédica</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e1a;--bg2:#0f1526;--bg3:#161d35;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#e8eaf0;--text2:#8892a4;--text3:#4a5568;--blue:#3b82f6;--blue-dim:rgba(59,130,246,0.15);--red:#ef4444;--red-dim:rgba(239,68,68,0.12);--orange:#f97316;--orange-dim:rgba(249,115,22,0.12);--green:#22c55e;--green-dim:rgba(34,197,94,0.12);--radius:10px;--radius-lg:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.logo-mark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff}
+.logo-text{font-size:13px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.btn{padding:7px 14px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text);transition:all .15s}
+.btn:hover{background:var(--border)}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-danger{background:var(--red-dim);border-color:rgba(239,68,68,0.3);color:var(--red)}
+.btn-success{background:var(--green-dim);border-color:rgba(34,197,94,0.3);color:var(--green)}
+.shell{display:flex;height:calc(100vh - 56px)}
+.sidebar{width:200px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:3px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--blue-dim);color:var(--blue)}
+.nav-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:14px 12px 5px}
+.main{flex:1;overflow-y:auto;padding:22px 26px}
+.pane{display:none}.pane.active{display:block}
+.section-hd{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-bottom:18px}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px}
+.kpi-val{font-size:26px;font-weight:600;font-family:'DM Mono',monospace;line-height:1}
+.kpi-lbl{font-size:11px;color:var(--text2);margin-top:5px}
+.kpi-red .kpi-val{color:var(--red)}
+.kpi-orange .kpi-val{color:var(--orange)}
+.kpi-green .kpi-val{color:var(--green)}
+.kpi-blue .kpi-val{color:var(--blue)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.card-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;font-family:'DM Mono',monospace}
+.pill-red{background:var(--red-dim);color:var(--red)}
+.pill-orange{background:var(--orange-dim);color:var(--orange)}
+.pill-green{background:var(--green-dim);color:var(--green)}
+.pill-blue{background:var(--blue-dim);color:var(--blue)}
+.pill-gray{background:rgba(255,255,255,0.05);color:var(--text2)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg3);color:var(--text);outline:none;transition:border .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue)}
+.field textarea{resize:vertical;min-height:70px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.empty-state{text-align:center;padding:40px;color:var(--text2);font-size:13px}
+.badge-alta{color:var(--red);font-weight:600}
+.badge-media{color:var(--orange);font-weight:600}
+.badge-baja{color:var(--text2)}
+.timeline-item{display:flex;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border)}
+.timeline-item:last-child{border-bottom:none}
+.timeline-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.timeline-content{flex:1}
+.timeline-title{font-size:13px;font-weight:500;margin-bottom:3px}
+.timeline-sub{font-size:11px;color:var(--text2)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="logo">
+    <div class="logo-mark">BM</div>
+    <span class="logo-text">Gestión Biomédica</span>
+  </a>
+  <div class="topbar-right">
+    <span style="font-size:12px;color:var(--text2)">Mantenimiento & Tendencias</span>
+    <a href="/" class="btn">← Volver al dashboard</a>
+    <button class="btn btn-primary" onclick="abrirModal()">+ Nueva orden</button>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="nav-label">Módulos</div>
+    <div class="nav-item active" onclick="switchPane('agenda')" id="nav-agenda">📋 Agenda</div>
+    <div class="nav-item" onclick="switchPane('calendario')" id="nav-calendario">📅 Calendario</div>
+    <div class="nav-item" onclick="switchPane('historial')" id="nav-historial">📁 Historial</div>
+    <div class="nav-label">Análisis</div>
+    <div class="nav-item" onclick="switchPane('tendencias')" id="nav-tendencias">📈 Tendencias</div>
+  </nav>
+
+  <main class="main">
+
+    <!-- AGENDA -->
+    <div id="pane-agenda" class="pane active">
+      <div class="section-hd">Órdenes de mantenimiento</div>
+      <div class="kpi-grid" id="kpiMant"></div>
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-title">Todas las órdenes</span>
+          <div style="display:flex;gap:8px">
+            <select id="filtroEstado" onchange="cargarOrdenes()" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text)">
+              <option value="">Todos los estados</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Completado">Completado</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Equipo</th><th>Ubicación</th><th>Tipo</th>
+              <th>Prioridad</th><th>Responsable</th>
+              <th>Fecha prog.</th><th>Estado</th><th>Acciones</th>
+            </tr></thead>
+            <tbody id="tablaOrdenes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDARIO -->
+    <div id="pane-calendario" class="pane">
+      <div class="section-hd">Próximos mantenimientos</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div class="card">
+          <div class="card-hd"><span class="card-title">⚠ Vencidos / atrasados</span></div>
+          <div id="listaVencidos"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">📅 Próximos 30 días</span></div>
+          <div id="listaProximos"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div id="pane-historial" class="pane">
+      <div class="section-hd">Historial de mantenimientos realizados</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Equipo</th><th>Tipo</th><th>Responsable</th>
+              <th>Fecha realizado</th><th>Duración (h)</th><th>Resultado</th>
+            </tr></thead>
+            <tbody id="tablaHistorial"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TENDENCIAS -->
+    <div id="pane-tendencias" class="pane">
+      <div class="section-hd">Historial y tendencias del inventario</div>
+      <div class="charts-row">
+        <div class="chart-card full">
+          <div class="chart-title">Evolución de equipos críticos</div>
+          <div style="position:relative;height:220px"><canvas id="chartCriticos" role="img" aria-label="Equipos críticos en el tiempo"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Batería promedio del inventario</div>
+          <div style="position:relative;height:200px"><canvas id="chartBatProm" role="img" aria-label="Batería promedio"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Estado de calibración — evolución</div>
+          <div style="position:relative;height:200px"><canvas id="chartCalEvo" role="img" aria-label="Calibración en el tiempo"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><span class="card-title">Registro de snapshots del inventario</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Fecha</th><th>Total</th><th>Críticos</th>
+              <th>Bat. crítica</th><th>Cal. vencida</th><th>Bat. promedio</th>
+            </tr></thead>
+            <tbody id="tablaSnapshots"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL NUEVA ORDEN -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitulo">Nueva orden de mantenimiento</div>
+    <input type="hidden" id="ordenId">
+    <div class="two-col">
+      <div class="field">
+        <label>Equipo</label>
+        <input type="text" id="fEquipo" placeholder="Nombre del equipo">
+      </div>
+      <div class="field">
+        <label>Ubicación</label>
+        <input type="text" id="fUbicacion" placeholder="UCI, Urgencias...">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field">
+        <label>Tipo</label>
+        <select id="fTipo">
+          <option>Preventivo</option>
+          <option>Calibración</option>
+          <option>Correctivo</option>
+          <option>Inspección</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Prioridad</label>
+        <select id="fPrioridad">
+          <option>Alta</option>
+          <option>Media</option>
+          <option>Baja</option>
+        </select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field">
+        <label>Responsable</label>
+        <input type="text" id="fResponsable" placeholder="Ing. García">
+      </div>
+      <div class="field">
+        <label>Fecha programada</label>
+        <input type="date" id="fFecha">
+      </div>
+    </div>
+    <div class="field">
+      <label>Descripción</label>
+      <textarea id="fDescripcion" placeholder="Detalle del trabajo a realizar..."></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarOrden()">Guardar orden</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPLETAR -->
+<div class="modal-overlay" id="modalCompletar" onclick="if(event.target===this)cerrarCompletar()">
+  <div class="modal">
+    <div class="modal-title">Marcar como completado</div>
+    <input type="hidden" id="completarId">
+    <div class="field">
+      <label>Responsable</label>
+      <input type="text" id="cResponsable" placeholder="Nombre del técnico">
+    </div>
+    <div class="field">
+      <label>Duración (horas)</label>
+      <input type="number" id="cDuracion" placeholder="2.5" step="0.5" min="0">
+    </div>
+    <div class="field">
+      <label>Resultado</label>
+      <input type="text" id="cResultado" placeholder="Completado satisfactoriamente">
+    </div>
+    <div class="field">
+      <label>Observaciones</label>
+      <textarea id="cObservaciones" placeholder="Notas adicionales..."></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="cerrarCompletar()">Cancelar</button>
+      <button class="btn btn-success" onclick="enviarCompletar()">✓ Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let chartCriticos=null,chartBatProm=null,chartCalEvo=null;
+
+// ---------------------------------------------------------------------------
+// Navegación
+// ---------------------------------------------------------------------------
+function switchPane(id){
+  ['agenda','calendario','historial','tendencias'].forEach(p=>{
+    document.getElementById('pane-'+p).classList.toggle('active',p===id);
+    document.getElementById('nav-'+p).classList.toggle('active',p===id);
+  });
+  if(id==='agenda')cargarOrdenes();
+  if(id==='calendario')cargarCalendario();
+  if(id==='historial')cargarHistorial();
+  if(id==='tendencias')cargarTendencias();
+}
+
+// ---------------------------------------------------------------------------
+// KPIs de mantenimiento
+// ---------------------------------------------------------------------------
+async function cargarKPIs(){
+  try{
+    const r=await fetch('/api/mantenimiento/resumen');
+    const d=await r.json();
+    const kpis=[
+      {val:d.pendientes,lbl:'Pendientes',cls:'kpi-orange'},
+      {val:d.en_proceso,lbl:'En proceso',cls:'kpi-blue'},
+      {val:d.completados,lbl:'Completados',cls:'kpi-green'},
+      {val:d.vencidos,lbl:'Vencidos',cls:d.vencidos>0?'kpi-red':''},
+      {val:d.proximos_7_dias,lbl:'Próximos 7 días',cls:''},
+    ];
+    document.getElementById('kpiMant').innerHTML=kpis.map(k=>`
+      <div class="kpi ${k.cls}">
+        <div class="kpi-val">${k.val}</div>
+        <div class="kpi-lbl">${k.lbl}</div>
+      </div>`).join('');
+  }catch(e){console.error(e);}
+}
+
+// ---------------------------------------------------------------------------
+// Tabla de órdenes
+// ---------------------------------------------------------------------------
+async function cargarOrdenes(){
+  cargarKPIs();
+  const estado=document.getElementById('filtroEstado').value;
+  const url='/api/mantenimiento/ordenes'+(estado?'?estado='+encodeURIComponent(estado):'');
+  const r=await fetch(url);
+  const d=await r.json();
+
+  const estadoPill=e=>{
+    const m={Pendiente:'pill-orange','En proceso':'pill-blue',Completado:'pill-green',Cancelado:'pill-gray'};
+    return`<span class="pill ${m[e]||'pill-gray'}">${e}</span>`;
+  };
+  const prioPill=p=>{
+    const cls=p==='Alta'?'badge-alta':p==='Media'?'badge-media':'badge-baja';
+    return`<span class="${cls}">${p}</span>`;
+  };
+  const tipoPill=t=>{
+    const m={Preventivo:'pill-blue',Calibración:'pill-orange',Correctivo:'pill-red',Inspección:'pill-gray'};
+    return`<span class="pill ${m[t]||'pill-gray'}">${t}</span>`;
+  };
+
+  document.getElementById('tablaOrdenes').innerHTML=d.ordenes.length
+    ? d.ordenes.map(o=>`<tr>
+        <td style="font-weight:500">${o.equipo}</td>
+        <td><span class="pill pill-gray">${o.ubicacion}</span></td>
+        <td>${tipoPill(o.tipo)}</td>
+        <td>${prioPill(o.prioridad)}</td>
+        <td style="color:var(--text2);font-size:12px">${o.responsable||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px">${o.fecha_programada}</td>
+        <td>${estadoPill(o.estado)}</td>
+        <td>
+          <div style="display:flex;gap:5px">
+            ${o.estado!=='Completado'&&o.estado!=='Cancelado'?`
+              <button class="btn btn-success" style="padding:4px 10px;font-size:11px"
+                onclick="abrirCompletar(${o.id})">✓</button>
+              <button class="btn" style="padding:4px 10px;font-size:11px"
+                onclick="editarOrden(${JSON.stringify(o).replace(/"/g,'&quot;')})">✏</button>
+            `:''}
+            <button class="btn btn-danger" style="padding:4px 10px;font-size:11px"
+              onclick="eliminarOrden(${o.id})">✕</button>
+          </div>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="8"><div class="empty-state">No hay órdenes registradas</div></td></tr>';
+}
+
+// ---------------------------------------------------------------------------
+// Calendario
+// ---------------------------------------------------------------------------
+async function cargarCalendario(){
+  const [rv, rp] = await Promise.all([
+    fetch('/api/mantenimiento/vencidos'),
+    fetch('/api/mantenimiento/proximos?dias=30'),
+  ]);
+  const venc = await rv.json();
+  const prox = await rp.json();
+
+  const item=(o,color)=>`
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:${color}"></div>
+      <div class="timeline-content">
+        <div class="timeline-title">${o.equipo} — ${o.tipo}</div>
+        <div class="timeline-sub">${o.responsable||'Sin responsable'} · ${o.fecha_programada}</div>
+      </div>
+      <span class="pill ${o.prioridad==='Alta'?'pill-red':o.prioridad==='Media'?'pill-orange':'pill-gray'}">${o.prioridad}</span>
+    </div>`;
+
+  document.getElementById('listaVencidos').innerHTML=venc.vencidos.length
+    ? venc.vencidos.map(o=>item(o,'#ef4444')).join('')
+    : '<div class="empty-state">Sin órdenes vencidas ✓</div>';
+
+  document.getElementById('listaProximos').innerHTML=prox.proximos.length
+    ? prox.proximos.map(o=>item(o,'#3b82f6')).join('')
+    : '<div class="empty-state">Sin órdenes próximas</div>';
+}
+
+// ---------------------------------------------------------------------------
+// Historial
+// ---------------------------------------------------------------------------
+async function cargarHistorial(){
+  const r=await fetch('/api/mantenimiento/historial');
+  const d=await r.json();
+  document.getElementById('tablaHistorial').innerHTML=d.historial.length
+    ? d.historial.map(h=>`<tr>
+        <td style="font-weight:500">${h.equipo}</td>
+        <td><span class="pill pill-blue">${h.tipo}</span></td>
+        <td style="color:var(--text2);font-size:12px">${h.responsable||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px">${h.fecha_realizado?.slice(0,10)||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px">${h.duracion_horas||'—'}</td>
+        <td style="color:var(--green);font-size:12px">${h.resultado||'—'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6"><div class="empty-state">Sin mantenimientos completados aún</div></td></tr>';
+}
+
+// ---------------------------------------------------------------------------
+// Tendencias
+// ---------------------------------------------------------------------------
+async function cargarTendencias(){
+  const [rt, rs]=await Promise.all([
+    fetch('/api/mantenimiento/tendencias'),
+    fetch('/api/mantenimiento/tendencias'),
+  ]);
+  const d=await rt.json();
+  const snaps=d.snapshots;
+
+  const labels=snaps.map(s=>s.fecha);
+  const cfg={responsive:true,maintainAspectRatio:false,
+    scales:{x:{ticks:{color:'#8892a4',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+             y:{ticks:{color:'#8892a4'},grid:{color:'rgba(255,255,255,0.04)'}}},
+    plugins:{legend:{display:false}}};
+
+  if(chartCriticos)chartCriticos.destroy();
+  chartCriticos=new Chart(document.getElementById('chartCriticos'),{type:'line',
+    data:{labels,datasets:[
+      {label:'Críticos',data:snaps.map(s=>s.criticos),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.08)',fill:true,tension:0.4,pointRadius:4},
+      {label:'Bat. crítica',data:snaps.map(s=>s.bat_critica),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.06)',fill:true,tension:0.4,pointRadius:4,borderDash:[4,4]},
+    ]},
+    options:{...cfg,plugins:{legend:{display:true,labels:{color:'#8892a4',font:{size:11}}}}}
+  });
+
+  if(chartBatProm)chartBatProm.destroy();
+  chartBatProm=new Chart(document.getElementById('chartBatProm'),{type:'line',
+    data:{labels,datasets:[{data:snaps.map(s=>s.bateria_promedio),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:0.4,pointRadius:4}]},
+    options:{...cfg,scales:{...cfg.scales,y:{...cfg.scales.y,min:0,max:100,ticks:{color:'#8892a4',callback:v=>v+'%'}}}}
+  });
+
+  if(chartCalEvo)chartCalEvo.destroy();
+  chartCalEvo=new Chart(document.getElementById('chartCalEvo'),{type:'bar',
+    data:{labels,datasets:[
+      {label:'Vigente',data:snaps.map(s=>s.cal_vigente),backgroundColor:'#22c55e',borderRadius:3},
+      {label:'Próxima',data:snaps.map(s=>s.cal_proxima),backgroundColor:'#f97316',borderRadius:3},
+      {label:'Vencida',data:snaps.map(s=>s.cal_vencida),backgroundColor:'#ef4444',borderRadius:3},
+    ]},
+    options:{...cfg,scales:{...cfg.scales,x:{...cfg.scales.x,stacked:true},y:{...cfg.scales.y,stacked:true}},
+      plugins:{legend:{display:true,labels:{color:'#8892a4',font:{size:11}}}}}
+  });
+
+  // Tabla snapshots
+  document.getElementById('tablaSnapshots').innerHTML=snaps.length
+    ? [...snaps].reverse().map(s=>`<tr>
+        <td style="font-family:'DM Mono',monospace;font-size:12px">${s.fecha}</td>
+        <td>${s.total_equipos}</td>
+        <td style="color:${s.criticos>0?'var(--red)':'var(--green)'};font-weight:600">${s.criticos}</td>
+        <td>${s.bat_critica}</td>
+        <td>${s.cal_vencida}</td>
+        <td style="font-family:'DM Mono',monospace">${s.bateria_promedio}%</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6"><div class="empty-state">Sin snapshots aún — se generan automáticamente al cargar datos</div></td></tr>';
+}
+
+// ---------------------------------------------------------------------------
+// Modal nueva / editar orden
+// ---------------------------------------------------------------------------
+function abrirModal(){
+  document.getElementById('modalTitulo').textContent='Nueva orden de mantenimiento';
+  document.getElementById('ordenId').value='';
+  ['fEquipo','fUbicacion','fResponsable','fDescripcion'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fTipo').value='Preventivo';
+  document.getElementById('fPrioridad').value='Media';
+  document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function editarOrden(o){
+  document.getElementById('modalTitulo').textContent='Editar orden';
+  document.getElementById('ordenId').value=o.id;
+  document.getElementById('fEquipo').value=o.equipo;
+  document.getElementById('fUbicacion').value=o.ubicacion;
+  document.getElementById('fTipo').value=o.tipo;
+  document.getElementById('fPrioridad').value=o.prioridad;
+  document.getElementById('fResponsable').value=o.responsable||'';
+  document.getElementById('fFecha').value=o.fecha_programada;
+  document.getElementById('fDescripcion').value=o.descripcion||'';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function cerrarModal(){document.getElementById('modalOverlay').classList.remove('open');}
+
+async function guardarOrden(){
+  const id=document.getElementById('ordenId').value;
+  const datos={
+    equipo:document.getElementById('fEquipo').value,
+    ubicacion:document.getElementById('fUbicacion').value,
+    tipo:document.getElementById('fTipo').value,
+    prioridad:document.getElementById('fPrioridad').value,
+    responsable:document.getElementById('fResponsable').value,
+    fecha_programada:document.getElementById('fFecha').value,
+    descripcion:document.getElementById('fDescripcion').value,
+  };
+  if(!datos.equipo){alert('El nombre del equipo es obligatorio');return;}
+
+  const url=id?`/api/mantenimiento/ordenes/${id}`:'/api/mantenimiento/ordenes';
+  const method=id?'PUT':'POST';
+  await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
+  cerrarModal();
+  cargarOrdenes();
+}
+
+async function eliminarOrden(id){
+  if(!confirm('¿Eliminar esta orden?'))return;
+  await fetch(`/api/mantenimiento/ordenes/${id}`,{method:'DELETE'});
+  cargarOrdenes();
+}
+
+// ---------------------------------------------------------------------------
+// Modal completar
+// ---------------------------------------------------------------------------
+function abrirCompletar(id){
+  document.getElementById('completarId').value=id;
+  ['cResponsable','cResultado','cObservaciones'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('cDuracion').value='';
+  document.getElementById('cResultado').value='Completado satisfactoriamente';
+  document.getElementById('modalCompletar').classList.add('open');
+}
+function cerrarCompletar(){document.getElementById('modalCompletar').classList.remove('open');}
+
+async function enviarCompletar(){
+  const id=document.getElementById('completarId').value;
+  const datos={
+    responsable:document.getElementById('cResponsable').value,
+    duracion_horas:parseFloat(document.getElementById('cDuracion').value)||0,
+    resultado:document.getElementById('cResultado').value,
+    observaciones:document.getElementById('cObservaciones').value,
+  };
+  await fetch(`/api/mantenimiento/ordenes/${id}/completar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
+  cerrarCompletar();
+  cargarOrdenes();
+}
+
+// Iniciar
+cargarOrdenes();
+</script>
+</body>
+</html>
