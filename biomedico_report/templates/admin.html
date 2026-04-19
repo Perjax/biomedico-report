@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin — Gestion Biomedica</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e1a;--bg2:#0f1526;--bg3:#161d35;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#e8eaf0;--text2:#8892a4;--text3:#4a5568;--blue:#3b82f6;--blue-dim:rgba(59,130,246,0.15);--red:#ef4444;--red-dim:rgba(239,68,68,0.12);--green:#22c55e;--green-dim:rgba(34,197,94,0.12);--orange:#f97316;--radius:10px;--radius-lg:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.logo-mark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff}
+.badge{font-size:10px;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace}
+.badge-red{background:var(--red-dim);color:var(--red)}
+.badge-blue{background:var(--blue-dim);color:var(--blue)}
+.badge-green{background:var(--green-dim);color:var(--green)}
+.btn{padding:7px 14px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text);transition:all .15s;text-decoration:none;display:inline-block}
+.btn:hover{background:var(--border)}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-danger{background:var(--red-dim);border-color:rgba(239,68,68,0.3);color:var(--red)}
+.main{padding:24px}
+.section-hd{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-bottom:18px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px}
+.kpi-val{font-size:28px;font-weight:600;font-family:'DM Mono',monospace;line-height:1}
+.kpi-lbl{font-size:11px;color:var(--text2);margin-top:5px}
+.kpi-red .kpi-val{color:var(--red)}
+.kpi-green .kpi-val{color:var(--green)}
+.kpi-blue .kpi-val{color:var(--blue)}
+.clinicas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:24px}
+.clinica-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:border .15s}
+.clinica-card:hover{border-color:var(--border2)}
+.clinica-header{padding:16px 18px;display:flex;align-items:center;gap:12px}
+.clinica-avatar{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:#fff;flex-shrink:0}
+.clinica-nombre{font-size:14px;font-weight:600;margin-bottom:2px}
+.clinica-sub{font-size:11px;color:var(--text2)}
+.clinica-body{padding:0 18px 14px;display:flex;gap:16px}
+.clinica-stat{text-align:center}
+.clinica-stat-val{font-size:20px;font-weight:600;font-family:'DM Mono',monospace}
+.clinica-stat-lbl{font-size:10px;color:var(--text2);margin-top:2px}
+.clinica-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.field input,.field select{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg3);color:var(--text);outline:none;transition:border .15s}
+.field input:focus,.field select:focus{border-color:var(--blue)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.color-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.color-opt{width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:border .15s}
+.color-opt.selected{border-color:white}
+.hint-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:12px;color:var(--text2);margin-bottom:14px}
+.hint-box strong{color:var(--text)}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="logo">
+    <div class="logo-mark">BM</div>
+    <span style="font-size:13px;font-weight:600">Gestion Biomedica</span>
+    <span class="badge badge-blue">ADMIN</span>
+  </a>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span style="font-size:12px;color:var(--text2)">Panel de administracion</span>
+    <a href="/" class="btn">Dashboard</a>
+    <button class="btn btn-primary" onclick="abrirModal()">+ Nueva clinica</button>
+    <a href="/logout" class="btn">Cerrar sesion</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="section-hd">Panel de administracion global</div>
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <span style="font-size:13px;font-weight:500">Clinicas registradas</span>
+    <span style="font-size:11px;color:var(--text2)" id="totalClinicas"></span>
+  </div>
+
+  <div class="clinicas-grid" id="clinicasGrid"></div>
+</div>
+
+<!-- MODAL NUEVA CLINICA -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitulo">Nueva clinica</div>
+    <input type="hidden" id="clinicaId">
+
+    <div class="hint-box" id="hintCredenciales" style="display:none">
+      Las credenciales de acceso se configuran abajo. Guardelas en un lugar seguro.
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <label>Nombre de la clinica</label>
+        <input type="text" id="fNombre" placeholder="Clinica San Rafael">
+      </div>
+      <div class="field">
+        <label>Codigo</label>
+        <input type="text" id="fCodigo" placeholder="CLINICA001">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field">
+        <label>NIT</label>
+        <input type="text" id="fNit" placeholder="900123456-1">
+      </div>
+      <div class="field">
+        <label>Ciudad</label>
+        <input type="text" id="fCiudad" placeholder="Bogota">
+      </div>
+    </div>
+    <div class="field">
+      <label>Telefono</label>
+      <input type="text" id="fTelefono" placeholder="6011234567">
+    </div>
+    <div class="field">
+      <label>Color de la clinica</label>
+      <div class="color-picker" id="colorPicker"></div>
+      <input type="hidden" id="fColor" value="#3b82f6">
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin:16px 0 14px;padding-top:14px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Credenciales de acceso</div>
+      <div class="two-col">
+        <div class="field">
+          <label>Usuario</label>
+          <input type="text" id="fUsuario" placeholder="clinica001">
+        </div>
+        <div class="field">
+          <label>Contrasena</label>
+          <input type="text" id="fPassword" placeholder="clave123">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarClinica()">Guardar clinica</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR CLAVE -->
+<div class="modal-overlay" id="modalClave" onclick="if(event.target===this)document.getElementById('modalClave').classList.remove('open')">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">Cambiar contrasena</div>
+    <input type="hidden" id="claveClinicaId">
+    <div class="field">
+      <label>Nueva contrasena</label>
+      <input type="text" id="fNuevaClave" placeholder="nueva clave...">
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="document.getElementById('modalClave').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarClave()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORES = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
+
+function initColorPicker(seleccionado){
+  const cp = document.getElementById('colorPicker');
+  cp.innerHTML = COLORES.map(c=>`
+    <div class="color-opt ${c===seleccionado?'selected':''}"
+      style="background:${c}"
+      onclick="seleccionarColor('${c}')"></div>`).join('');
+}
+
+function seleccionarColor(c){
+  document.getElementById('fColor').value = c;
+  document.querySelectorAll('.color-opt').forEach(el=>{
+    el.classList.toggle('selected', el.style.background===c || el.style.backgroundColor===c);
+  });
+}
+
+async function cargarResumen(){
+  const r = await fetch('/api/admin/resumen');
+  const d = await r.json();
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi kpi-blue"><div class="kpi-val">${d.total_clinicas}</div><div class="kpi-lbl">Clinicas activas</div></div>
+    <div class="kpi"><div class="kpi-val">${d.total_equipos}</div><div class="kpi-lbl">Equipos totales</div></div>
+    <div class="kpi kpi-red"><div class="kpi-val">${d.total_criticos}</div><div class="kpi-lbl">Alertas criticas</div></div>
+    <div class="kpi kpi-green"><div class="kpi-val">${d.total_equipos - d.total_criticos}</div><div class="kpi-lbl">Equipos operativos</div></div>`;
+
+  document.getElementById('totalClinicas').textContent = d.total_clinicas + ' clinicas';
+
+  document.getElementById('clinicasGrid').innerHTML = d.por_clinica.map(c=>`
+    <div class="clinica-card">
+      <div class="clinica-header">
+        <div class="clinica-avatar" style="background:${c.color}">${c.nombre.charAt(0)}</div>
+        <div>
+          <div class="clinica-nombre">${c.nombre}</div>
+          <div class="clinica-sub">${c.ciudad||'Sin ciudad'}</div>
+        </div>
+        ${c.criticos>0?`<span class="badge badge-red" style="margin-left:auto">⚠ ${c.criticos}</span>`:'<span class="badge badge-green" style="margin-left:auto">✓ OK</span>'}
+      </div>
+      <div class="clinica-body">
+        <div class="clinica-stat">
+          <div class="clinica-stat-val">${c.equipos||0}</div>
+          <div class="clinica-stat-lbl">Equipos</div>
+        </div>
+        <div class="clinica-stat">
+          <div class="clinica-stat-val" style="color:${c.criticos>0?'var(--red)':'var(--green)'}">${c.criticos||0}</div>
+          <div class="clinica-stat-lbl">Criticos</div>
+        </div>
+      </div>
+      <div class="clinica-footer">
+        <button class="btn btn-primary" style="flex:1;font-size:11px"
+          onclick="entrarComoClinica(${c.id})">Entrar como clinica →</button>
+        <button class="btn" style="font-size:11px"
+          onclick="abrirClave(${c.id})">Clave</button>
+        <button class="btn" style="font-size:11px"
+          onclick="editarClinica(${JSON.stringify(c).replace(/"/g,'&quot;')})">Editar</button>
+      </div>
+    </div>`).join('') || '<div style="color:var(--text2);font-size:13px;padding:20px">No hay clinicas registradas</div>';
+}
+
+async function entrarComoClinica(clinicaId){
+  const r = await fetch('/api/admin/entrar-como/'+clinicaId, {method:'POST'});
+  const d = await r.json();
+  if(d.ok) window.location.href='/';
+  else alert('Error: ' + d.error);
+}
+
+function abrirModal(){
+  document.getElementById('modalTitulo').textContent = 'Nueva clinica';
+  document.getElementById('clinicaId').value = '';
+  document.getElementById('hintCredenciales').style.display = 'none';
+  ['fNombre','fCodigo','fNit','fCiudad','fTelefono','fUsuario','fPassword'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fColor').value = '#3b82f6';
+  initColorPicker('#3b82f6');
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function editarClinica(c){
+  document.getElementById('modalTitulo').textContent = 'Editar clinica';
+  document.getElementById('clinicaId').value = c.id;
+  document.getElementById('fNombre').value = c.nombre||'';
+  document.getElementById('fCodigo').value = c.codigo||'';
+  document.getElementById('fNit').value = c.nit||'';
+  document.getElementById('fCiudad').value = c.ciudad||'';
+  document.getElementById('fTelefono').value = c.telefono||'';
+  document.getElementById('fColor').value = c.color||'#3b82f6';
+  document.getElementById('fUsuario').value = '';
+  document.getElementById('fPassword').value = '';
+  document.getElementById('hintCredenciales').style.display = 'block';
+  initColorPicker(c.color||'#3b82f6');
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function cerrarModal(){document.getElementById('modalOverlay').classList.remove('open');}
+
+async function guardarClinica(){
+  const id = document.getElementById('clinicaId').value;
+  const datos = {
+    nombre: document.getElementById('fNombre').value,
+    codigo: document.getElementById('fCodigo').value,
+    nit: document.getElementById('fNit').value,
+    ciudad: document.getElementById('fCiudad').value,
+    telefono: document.getElementById('fTelefono').value,
+    color: document.getElementById('fColor').value,
+    usuario: document.getElementById('fUsuario').value,
+    password: document.getElementById('fPassword').value,
+  };
+  if(!datos.nombre){alert('El nombre es obligatorio');return;}
+
+  const url = id ? '/api/admin/clinicas/'+id : '/api/admin/clinicas';
+  const method = id ? 'PUT' : 'POST';
+  const r = await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
+  const d = await r.json();
+  if(d.error){alert('Error: '+d.error);return;}
+  cerrarModal();
+  cargarResumen();
+}
+
+function abrirClave(clinicaId){
+  document.getElementById('claveClinicaId').value = clinicaId;
+  document.getElementById('fNuevaClave').value = '';
+  document.getElementById('modalClave').classList.add('open');
+}
+
+async function guardarClave(){
+  const id = document.getElementById('claveClinicaId').value;
+  const clave = document.getElementById('fNuevaClave').value;
+  if(!clave){alert('Escribe la nueva contrasena');return;}
+  await fetch('/api/admin/clinicas/'+id+'/password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:clave})});
+  document.getElementById('modalClave').classList.remove('open');
+  alert('Contrasena actualizada correctamente');
+}
+
+cargarResumen();
+</script>
+</body>
+</html>

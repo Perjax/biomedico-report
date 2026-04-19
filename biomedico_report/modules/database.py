@@ -295,3 +295,61 @@ def hay_datos() -> bool:
     with _conexion() as conn:
         count = conn.execute("SELECT COUNT(*) FROM equipos").fetchone()[0]
         return count > 0
+
+
+def obtener_equipos_clinica(clinica_id: int):
+    """Retorna equipos filtrados por clinica."""
+    import pandas as pd
+    with _conexion() as conn:
+        cursor = conn.execute("""
+            SELECT equipo AS "Equipo", ubicacion AS "Ubicacion",
+                   bateria AS "Bateria (%)", estado_bateria AS "Estado Bateria",
+                   ultima_calibracion AS "Ultima Calibracion",
+                   dias_calibracion AS "Dias desde Calibracion",
+                   estado_calibracion AS "Estado Calibracion",
+                   alerta_critica AS "Alerta Critica"
+            FROM equipos WHERE clinica_id = ?
+            ORDER BY alerta_critica DESC, bateria ASC
+        """, (clinica_id,))
+        filas = cursor.fetchall()
+    if not filas:
+        return pd.DataFrame()
+    df = pd.DataFrame([dict(f) for f in filas])
+    # Rename to Spanish with accents for compatibility
+    df = df.rename(columns={
+        "Ubicacion": "Ubicaci\u00f3n",
+        "Bateria (%)": "Bater\u00eda (%)",
+        "Estado Bateria": "Estado Bater\u00eda",
+        "Ultima Calibracion": "\u00daltima Calibraci\u00f3n",
+        "Dias desde Calibracion": "D\u00edas desde Calibraci\u00f3n",
+        "Estado Calibracion": "Estado Calibraci\u00f3n",
+        "Alerta Critica": "Alerta Cr\u00edtica",
+    })
+    df["Alerta Cr\u00edtica"] = df["Alerta Cr\u00edtica"].astype(bool)
+    return df
+
+
+def guardar_equipos_clinica(df, clinica_id: int):
+    """Guarda equipos asociados a una clinica especifica."""
+    from datetime import datetime
+    with _conexion() as conn:
+        conn.execute("DELETE FROM equipos WHERE clinica_id = ?", (clinica_id,))
+        for _, row in df.iterrows():
+            conn.execute("""
+                INSERT INTO equipos
+                    (equipo, ubicacion, bateria, estado_bateria,
+                     ultima_calibracion, dias_calibracion,
+                     estado_calibracion, alerta_critica, actualizado_en, clinica_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                str(row["Equipo"]),
+                str(row.get("Ubicaci\u00f3n", "N/A")),
+                int(row["Bater\u00eda (%)"]),
+                str(row["Estado Bater\u00eda"]),
+                str(row["\u00daltima Calibraci\u00f3n"]),
+                int(row["D\u00edas desde Calibraci\u00f3n"]),
+                str(row["Estado Calibraci\u00f3n"]),
+                int(bool(row["Alerta Cr\u00edtica"])),
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                clinica_id,
+            ))
