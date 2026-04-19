@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión Biomédica — Iniciar Sesión</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #0f1526;
+    --bg3: #161d35;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8892a4;
+    --blue: #3b82f6;
+    --blue-dim: rgba(59,130,246,0.15);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .container {
+    width: 100%;
+    max-width: 400px;
+    padding: 24px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 36px;
+  }
+  .logo-mark {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 600; color: #fff;
+  }
+  .logo-text { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+  }
+  .card-title {
+    font-size: 20px; font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .card-sub {
+    font-size: 13px; color: var(--text2);
+    margin-bottom: 28px;
+  }
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 12px; font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .field input {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 11px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    outline: none;
+    transition: border .15s;
+  }
+  .field input:focus { border-color: var(--blue); }
+  .btn-login {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: var(--blue);
+    color: #fff;
+    margin-top: 8px;
+    transition: background .15s;
+    letter-spacing: -0.01em;
+  }
+  .btn-login:hover { background: #2563eb; }
+  .btn-login:active { transform: scale(0.99); }
+  .error-box {
+    background: var(--red-dim);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--red);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hint {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .hint strong { color: var(--text); font-family: 'DM Mono', monospace; font-size: 11px; }
+  .footer {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">
+    <div class="logo-mark">BM</div>
+    <div class="logo-text">Gestión Biomédica</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Iniciar sesión</div>
+    <div class="card-sub">Accede al sistema de monitoreo de equipos</div>
+
+    {% if error %}
+    <div class="error-box">
+      <span>✕</span> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/login">
+      <div class="field">
+        <label>Usuario</label>
+        <input type="text" name="usuario" placeholder="Escribe tu usuario" autocomplete="username" required autofocus>
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" name="contrasena" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-login">Entrar al sistema →</button>
+    </form>
+
+    <div class="hint">
+      Credenciales de demo:<br>
+      Usuario: <strong>admin</strong> · Contraseña: <strong>biomedico123</strong><br>
+      Usuario: <strong>tecnico</strong> · Contraseña: <strong>tecnico456</strong>
+    </div>
+  </div>
+
+  <div class="footer">Sistema de Gestión Biomédica v2.0</div>
+</div>
+</body>
+</html>
